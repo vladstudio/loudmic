@@ -1,10 +1,11 @@
 import Cocoa
-import ServiceManagement
+import MacAppKit
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var targetVolume = 100
-    var statusItem: NSStatusItem!
-    var volume100Item: NSMenuItem!, volume80Item: NSMenuItem!, loginItem: NSMenuItem!
+    private var statusItem: NSStatusItem!
+    private var targetVolume = 100
+    private var volume100Item: NSMenuItem!
+    private var volume80Item: NSMenuItem!
 
     func applicationDidFinishLaunching(_ n: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -12,34 +13,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let data = Data(base64Encoded: b64), let img = NSImage(data: data) {
             img.size = NSSize(width: 18, height: 18); img.isTemplate = true; statusItem.button?.image = img
         }
+
         let menu = NSMenu()
+        menu.delegate = self
         volume100Item = NSMenuItem(title: "100% Volume", action: #selector(set100), keyEquivalent: ""); volume100Item.target = self; volume100Item.state = .on
         volume80Item = NSMenuItem(title: "80% Volume", action: #selector(set80), keyEquivalent: ""); volume80Item.target = self
-        loginItem = NSMenuItem(title: "Start at Login", action: #selector(toggleLogin), keyEquivalent: ""); loginItem.target = self
-        loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        [volume100Item, volume80Item, NSMenuItem.separator(), loginItem, NSMenuItem.separator(), NSMenuItem(title: "Quit", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q")].forEach { menu.addItem($0) }
+        let loginItem = NSMenuItem(title: "Start on Login", action: #selector(toggleLogin), keyEquivalent: ""); loginItem.target = self
+        let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkUpdate), keyEquivalent: ""); updateItem.target = self
+        [volume100Item, volume80Item, NSMenuItem.separator(), loginItem, NSMenuItem.separator(), updateItem, NSMenuItem(title: "Quit LoudMic", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q")].forEach { menu.addItem($0) }
         statusItem.menu = menu
+
         Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             guard let v = self?.targetVolume else { return }
-            DispatchQueue.global().async {
-                let p = Process()
-                p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-                p.arguments = ["-e", "set volume input volume \(v)"]
-                try? p.run()
-                p.waitUntilExit()
-            }
+            DispatchQueue.global().async { Self.setInputVolume(v) }
         }
     }
-    @objc func set100() { targetVolume = 100; volume100Item.state = .on; volume80Item.state = .off }
-    @objc func set80() { targetVolume = 80; volume100Item.state = .off; volume80Item.state = .on }
-    @objc func toggleLogin() {
-        do { if SMAppService.mainApp.status == .enabled { try SMAppService.mainApp.unregister() } else { try SMAppService.mainApp.register() } }
-        catch { NSLog("Login item toggle failed: %@", error.localizedDescription) }
-        loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+
+    @objc private func set100() { targetVolume = 100; volume100Item.state = .on; volume80Item.state = .off }
+    @objc private func set80() { targetVolume = 80; volume100Item.state = .off; volume80Item.state = .on }
+    @objc private func toggleLogin(_ sender: NSMenuItem) { LoginItem.toggle(); sender.state = LoginItem.isEnabled ? .on : .off }
+    @objc private func checkUpdate() { UpdateChecker.check(repo: "vladstudio/mac-loudmic", appName: "LoudMic", manual: true) }
+
+    private static func setInputVolume(_ v: Int) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        p.arguments = ["-e", "set volume input volume \(v)"]
+        try? p.run()
+        p.waitUntilExit()
     }
 }
 
-let app = NSApplication.shared
-app.setActivationPolicy(.accessory)
-let delegate = AppDelegate(); app.delegate = delegate
-app.run()
+extension AppDelegate: NSMenuDelegate {
+    func menuWillOpen(_ menu: NSMenu) {
+        if let item = menu.items.first(where: { $0.title == "Start on Login" }) {
+            item.state = LoginItem.isEnabled ? .on : .off
+        }
+    }
+}
