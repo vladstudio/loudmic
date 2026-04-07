@@ -20,7 +20,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         volume80Item = NSMenuItem(title: "80% Volume", action: #selector(set80), keyEquivalent: ""); volume80Item.target = self
         let loginItem = NSMenuItem(title: "Start on Login", action: #selector(toggleLogin), keyEquivalent: ""); loginItem.target = self
         let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkUpdate), keyEquivalent: ""); updateItem.target = self
-        [volume100Item, volume80Item, NSMenuItem.separator(), loginItem, NSMenuItem.separator(), updateItem, NSMenuItem(title: "Quit LoudMic", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q")].forEach { menu.addItem($0) }
+        let aboutItem = NSMenuItem(title: "About LoudMic", action: #selector(openAbout), keyEquivalent: ""); aboutItem.target = self
+        [volume100Item, volume80Item, NSMenuItem.separator(), loginItem, NSMenuItem.separator(), updateItem, aboutItem, NSMenuItem.separator(), NSMenuItem(title: "Quit LoudMic", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q")].forEach { menu.addItem($0) }
         statusItem.menu = menu
 
         Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
@@ -32,7 +33,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func set100() { targetVolume = 100; volume100Item.state = .on; volume80Item.state = .off }
     @objc private func set80() { targetVolume = 80; volume100Item.state = .off; volume80Item.state = .on }
     @objc private func toggleLogin(_ sender: NSMenuItem) { LoginItem.toggle(); sender.state = LoginItem.isEnabled ? .on : .off }
-    @objc private func checkUpdate() { UpdateChecker.check(repo: "vladstudio/mac-loudmic", appName: "LoudMic", manual: true) }
+    @objc private func checkUpdate() { UpdateChecker.check(repo: "vladstudio/loudmic", appName: "LoudMic", manual: true) }
+    @objc private func openAbout() { NSWorkspace.shared.open(URL(string: "https://loudmic.vlad.studio")!) }
 
     private static func setInputVolume(_ v: Int) {
         let p = Process()

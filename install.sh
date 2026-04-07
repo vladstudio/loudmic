@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="LoudMic"
-REPO="vladstudio/mac-loudmic"
+REPO="vladstudio/loudmic"
 
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
