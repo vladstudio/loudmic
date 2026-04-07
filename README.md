@@ -1,10 +1,12 @@
 # LoudMic
 
+<img src="loudmic.png" width="128" alt="App icon">
+
 A tiny macOS menu bar app that keeps your microphone volume where you want it.
 
 Some apps and system events love to quietly reset your mic input level. LoudMic fights back by re-applying your chosen volume (100% or 80%) every few seconds, so your calls and recordings stay consistent.
 
-**Requires macOS 14 (Sonoma) or later.**
+**Requires macOS 15 (Sequoia) or later.**
 
 ## Install
 
