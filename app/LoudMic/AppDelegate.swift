@@ -59,7 +59,7 @@ import MacAppKit
     @objc private func set80() { targetVolume = 80; volume100Item.state = .off; volume80Item.state = .on }
     @objc private func toggleLogin(_ sender: NSMenuItem) { LoginItem.toggle(); sender.state = LoginItem.isEnabled ? .on : .off }
     @objc private func checkUpdate() { UpdateChecker.check(repo: "vladstudio/loudmic", appName: "LoudMic", manual: true) }
-    @objc private func openAbout() { NSWorkspace.shared.open(URL(string: "https://loudmic.vlad.studio")!) }
+    @objc private func openAbout() { NSWorkspace.shared.open(URL(string: "https://apps.vlad.studio/loudmic")!) }
 
     nonisolated private static func setInputVolume(_ v: Int) {
         var deviceID = AudioDeviceID(0)

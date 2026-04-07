@@ -34,7 +34,7 @@ Depends on the sibling [MacAppKit](../app-kit) package.
 
 ## Author
 
-[Vlad Gerasimov](https://vlad.studio) -- [loudmic.vlad.studio](https://loudmic.vlad.studio)
+[Vlad Gerasimov](https://vlad.studio) -- [loudmic.vlad.studio](https://apps.vlad.studio/loudmic)
 
 ## License
 
