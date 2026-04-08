@@ -8,6 +8,8 @@ import MacAppKit
     private var volume100Item: NSMenuItem!
     private var volume80Item: NSMenuItem!
     private var loginItem: NSMenuItem!
+    private var currentInputDeviceID: AudioDeviceID = 0
+    private var volumeListenerBlock: AudioObjectPropertyListenerBlock?
 
     func applicationDidFinishLaunching(_ n: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -21,12 +23,16 @@ import MacAppKit
         let menu = NSMenu()
         menu.delegate = self
 
+        let saved = UserDefaults.standard.integer(forKey: "targetVolume")
+        if saved == 80 { targetVolume = 80 }
+
         volume100Item = NSMenuItem(title: "100% Volume", action: #selector(set100), keyEquivalent: "")
         volume100Item.target = self
-        volume100Item.state = .on
+        volume100Item.state = targetVolume == 100 ? .on : .off
 
         volume80Item = NSMenuItem(title: "80% Volume", action: #selector(set80), keyEquivalent: "")
         volume80Item.target = self
+        volume80Item.state = targetVolume == 80 ? .on : .off
 
         loginItem = NSMenuItem(title: "Start on Login", action: #selector(toggleLogin), keyEquivalent: "")
         loginItem.target = self
@@ -52,14 +58,77 @@ import MacAppKit
             }
         }
 
+        watchDefaultDeviceChanges()
+        watchCurrentDeviceVolume()
+
         UpdateChecker.check(repo: "vladstudio/loudmic", appName: "LoudMic")
     }
 
-    @objc private func set100() { targetVolume = 100; volume100Item.state = .on; volume80Item.state = .off }
-    @objc private func set80() { targetVolume = 80; volume100Item.state = .off; volume80Item.state = .on }
+    @objc private func set100() {
+        targetVolume = 100; volume100Item.state = .on; volume80Item.state = .off
+        UserDefaults.standard.set(100, forKey: "targetVolume")
+        Self.setInputVolume(100)
+    }
+    @objc private func set80() {
+        targetVolume = 80; volume100Item.state = .off; volume80Item.state = .on
+        UserDefaults.standard.set(80, forKey: "targetVolume")
+        Self.setInputVolume(80)
+    }
     @objc private func toggleLogin(_ sender: NSMenuItem) { LoginItem.toggle(); sender.state = LoginItem.isEnabled ? .on : .off }
     @objc private func checkUpdate() { UpdateChecker.check(repo: "vladstudio/loudmic", appName: "LoudMic", manual: true) }
     @objc private func openAbout() { NSWorkspace.shared.open(URL(string: "https://apps.vlad.studio/loudmic")!) }
+
+    private func watchDefaultDeviceChanges() {
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        AudioObjectAddPropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject), &addr, .main
+        ) { [weak self] _, _ in
+            MainActor.assumeIsolated {
+                self?.unwatchCurrentDeviceVolume()
+                self?.watchCurrentDeviceVolume()
+                guard let v = self?.targetVolume else { return }
+                AppDelegate.setInputVolume(v)
+            }
+        }
+    }
+
+    private func watchCurrentDeviceVolume() {
+        var deviceID = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+              &addr, 0, nil, &size, &deviceID) == noErr else { return }
+        currentInputDeviceID = deviceID
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            MainActor.assumeIsolated {
+                guard let v = self?.targetVolume else { return }
+                AppDelegate.setInputVolume(v)
+            }
+        }
+        volumeListenerBlock = block
+        var volAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyVolumeScalar,
+            mScope: kAudioDevicePropertyScopeInput,
+            mElement: kAudioObjectPropertyElementMain)
+        AudioObjectAddPropertyListenerBlock(deviceID, &volAddr, .main, block)
+    }
+
+    private func unwatchCurrentDeviceVolume() {
+        guard currentInputDeviceID != 0, let block = volumeListenerBlock else { return }
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyVolumeScalar,
+            mScope: kAudioDevicePropertyScopeInput,
+            mElement: kAudioObjectPropertyElementMain)
+        AudioObjectRemovePropertyListenerBlock(currentInputDeviceID, &addr, .main, block)
+        volumeListenerBlock = nil
+        currentInputDeviceID = 0
+    }
 
     nonisolated private static func setInputVolume(_ v: Int) {
         var deviceID = AudioDeviceID(0)
@@ -75,8 +144,11 @@ import MacAppKit
         addr.mSelector = kAudioDevicePropertyVolumeScalar
         addr.mScope = kAudioDevicePropertyScopeInput
         size = UInt32(MemoryLayout<Float32>.size)
-        for ch: UInt32 in [1, 2] {
+        for ch: UInt32 in [0, 1, 2] {
             addr.mElement = ch
+            var settable: DarwinBoolean = false
+            guard AudioObjectIsPropertySettable(deviceID, &addr, &settable) == noErr,
+                  settable.boolValue else { continue }
             AudioObjectSetPropertyData(deviceID, &addr, 0, nil, size, &volume)
         }
     }
