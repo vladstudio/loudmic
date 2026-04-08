@@ -51,12 +51,6 @@ import MacAppKit
         statusItem.menu = menu
 
         Self.setInputVolume(targetVolume)
-        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let v = self?.targetVolume else { return }
-                AppDelegate.setInputVolume(v)
-            }
-        }
 
         watchDefaultDeviceChanges()
         watchCurrentDeviceVolume()
@@ -149,6 +143,10 @@ import MacAppKit
             var settable: DarwinBoolean = false
             guard AudioObjectIsPropertySettable(deviceID, &addr, &settable) == noErr,
                   settable.boolValue else { continue }
+            var current: Float32 = 0
+            var curSize = UInt32(MemoryLayout<Float32>.size)
+            if AudioObjectGetPropertyData(deviceID, &addr, 0, nil, &curSize, &current) == noErr,
+               abs(current - volume) < 0.01 { continue }
             AudioObjectSetPropertyData(deviceID, &addr, 0, nil, size, &volume)
         }
     }
