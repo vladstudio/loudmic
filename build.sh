@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
 cd "$(dirname "$0")"
-source ../scripts/build-kit.sh
+source ../app-scripts/build-kit.sh
 build_app "LoudMic" \
   --info app/LoudMic/Info.plist
