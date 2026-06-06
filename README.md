@@ -22,18 +22,6 @@ curl -fsSL https://raw.githubusercontent.com/vladstudio/loudmic/main/install.sh 
 - Optional start-on-login
 - Auto-update from GitHub releases
 
-## Build from source
-
-```sh
-./build.sh
-```
-
-Depends on the sibling [MacAppKit](../app-kit) package.
-
-## Author
-
-[Vlad Gerasimov](https://vlad.studio) -- [loudmic.vlad.studio](https://apps.vlad.studio/loudmic)
-
-## License
+#### License
 
 MIT -- see [LICENSE](LICENSE).
