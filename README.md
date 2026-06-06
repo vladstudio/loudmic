@@ -10,9 +10,14 @@ Some apps and system events love to quietly reset your mic input level. LoudMic 
 
 ## Install
 
+1. Open **Terminal** (press ⌘Space, type "Terminal", press Enter)
+2. Copy and paste this command, then press Enter:
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/vladstudio/loudmic/main/install.sh | bash
 ```
+
+3. The app will install to /Applications and open automatically
 
 ## Features
 
@@ -22,6 +27,6 @@ curl -fsSL https://raw.githubusercontent.com/vladstudio/loudmic/main/install.sh 
 - Optional start-on-login
 - Auto-update from GitHub releases
 
-#### License
+---
 
-MIT -- see [LICENSE](LICENSE).
+License: MIT
