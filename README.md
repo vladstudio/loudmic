@@ -10,10 +10,6 @@ Some apps and system events love to quietly reset your mic input level. LoudMic 
 
 ## Install
 
-[Download LoudMic.zip](https://github.com/vladstudio/loudmic/releases/latest/download/LoudMic.zip), unzip, and move to Applications.
-
-Or via terminal:
-
 ```sh
 curl -fsSL https://raw.githubusercontent.com/vladstudio/loudmic/main/install.sh | bash
 ```
