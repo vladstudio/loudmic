@@ -1,6 +1,6 @@
 # LoudMic
 
-<img src="loudmic.png" width="128" alt="App icon">
+<img src="loudmic-1024.png" width="128" alt="App icon">
 
 A tiny macOS menu bar app that keeps your microphone volume where you want it.
 
